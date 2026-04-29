@@ -3,15 +3,36 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour
 {
     public float speed = 5f;
+    public float jumpForce = 7f;
+    private Rigidbody rb;
+    private float distToGround;
+
+    void Start()
+    {
+        rb = GetComponent<Rigidbody>();
+        rb.freezeRotation = true;
+        distToGround = GetComponent<Collider>().bounds.extents.y;
+    }
 
     void Update()
     {
-        float moveX = Input.GetAxis("Horizontal"); // A/D
-        float moveZ = Input.GetAxis("Vertical");   // W/S
+        if (Input.GetKeyDown(KeyCode.Space) && IsGrounded())
+        {
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        }
+    }
 
-        Vector3 move = new Vector3(moveX, 0, moveZ);
+    bool IsGrounded()
+    {
+        return Physics.Raycast(transform.position, -Vector3.up, distToGround + 0.1f);
+    }
 
-        transform.Translate(move * speed * Time.deltaTime, Space.World);
+    void FixedUpdate()
+    {
+        float h = Input.GetAxis("Horizontal");
+        float v = Input.GetAxis("Vertical");
+
+        Vector3 move = (transform.forward * v + transform.right * h).normalized;
+        rb.MovePosition(rb.position + move * speed * Time.fixedDeltaTime);
     }
 }
-
