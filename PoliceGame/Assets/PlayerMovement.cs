@@ -4,6 +4,8 @@ public class PlayerMovement : MonoBehaviour
 {
     public float speed = 5f;
     public float jumpForce = 7f;
+    public Animator anim; // Drag your character model here in the Inspector
+    
     private Rigidbody rb;
     private float distToGround;
 
@@ -19,6 +21,17 @@ public class PlayerMovement : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space) && IsGrounded())
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        }
+
+        // Update Animator speed parameter
+        if (anim != null)
+        {
+            float horizontal = Input.GetAxis("Horizontal");
+            float vertical = Input.GetAxis("Vertical");
+            
+            // Calculate how fast we are moving (0 to 1)
+            float moveMagnitude = new Vector2(horizontal, vertical).magnitude;
+            anim.SetFloat("Speed", moveMagnitude);
         }
     }
 
