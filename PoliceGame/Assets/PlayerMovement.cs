@@ -13,25 +13,29 @@ public class PlayerMovement : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
+        // Make sure you have a Capsule Collider on the player!
         distToGround = GetComponent<Collider>().bounds.extents.y;
     }
 
     void Update()
     {
+        // Jump Logic
         if (Input.GetKeyDown(KeyCode.Space) && IsGrounded())
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
 
-        // Update Animator speed parameter
+        // UPDATE ANIMATOR HERE
         if (anim != null)
         {
             float horizontal = Input.GetAxis("Horizontal");
             float vertical = Input.GetAxis("Vertical");
             
-            // Calculate how fast we are moving (0 to 1)
-            float moveMagnitude = new Vector2(horizontal, vertical).magnitude;
-            anim.SetFloat("Speed", moveMagnitude);
+            // This checks if you are pressing any movement keys
+            bool isMoving = (horizontal != 0 || vertical != 0);
+
+            // This tells your 'iswalking' parameter to turn ON or OFF
+            anim.SetBool("iswalking", isMoving);
         }
     }
 
