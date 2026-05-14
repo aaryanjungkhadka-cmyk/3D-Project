@@ -13,12 +13,13 @@ public class PlayerMovement : MonoBehaviour
     private Rigidbody rb;
     private Transform camTransform;
     private Vector3 moveInput;
+    private bool jumpRequested; // New flag for safe physics jumping
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         
-        // Essential physics settings for a character
+        // Essential physics settings to prevent jitter
         rb.freezeRotation = true; 
         rb.interpolation = RigidbodyInterpolation.Interpolate; 
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
@@ -28,26 +29,20 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        // 1. Get Input (Raw for instant stopping)
+        // 1. Get Input
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
+        
+        // Store movement input
+        moveInput = new Vector3(h, 0, v);
 
-        // 2. Calculate direction relative to Camera
-        Vector3 forward = camTransform.forward;
-        Vector3 right = camTransform.right;
-        forward.y = 0f;
-        right.y = 0f;
-        moveInput = (forward.normalized * v + right.normalized * h).normalized;
-
-        // 3. Jump Logic (Using the 1.5f fix for your high pivot point)
+        // 2. Capture Jump Input in Update (Standard practice)
         if (Input.GetKeyDown(KeyCode.Space) && IsGrounded())
         {
-            // Reset vertical velocity before jumping
-            rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            jumpRequested = true;
         }
 
-        // 4. Animation Sync
+        // 3. Animation Sync
         if (anim != null)
         {
             anim.SetBool("iswalking", moveInput.magnitude > 0.1f);
@@ -56,27 +51,43 @@ public class PlayerMovement : MonoBehaviour
 
     void FixedUpdate()
     {
+        // 4. Calculate camera-relative movement INSIDE FixedUpdate
+        // This ensures the camera position used matches the physics step
+        Vector3 forward = camTransform.forward;
+        Vector3 right = camTransform.right;
+        forward.y = 0f;
+        right.y = 0f;
+        
+        Vector3 processedMove = (forward.normalized * moveInput.z + right.normalized * moveInput.x).normalized;
+
         // 5. Movement Logic
-        if (moveInput.magnitude > 0.1f)
+        if (processedMove.magnitude > 0.1f)
         {
-            Vector3 targetVelocity = moveInput * speed;
+            Vector3 targetVelocity = processedMove * speed;
             rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
 
             // Smooth Rotation
-            Quaternion targetRotation = Quaternion.LookRotation(moveInput);
+            Quaternion targetRotation = Quaternion.LookRotation(processedMove);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
         }
         else
         {
-            // STOP FIX: Kills the horizontal velocity immediately when keys are released
+            // STOP FIX
             rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+        }
+
+        // 6. Apply Jump in FixedUpdate
+        if (jumpRequested)
+        {
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            jumpRequested = false; // Reset flag
         }
     }
 
     bool IsGrounded()
     {
-        // PIVOT FIX: Based on your screenshot (image_ea4bfb.png), the pivot is in the stomach.
-        // We shoot the ray 1.5 meters down to ensure it reaches the feet.
+        // Raycast logic from image_bfa4f8.png
         return Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, 1.5f);
     }
 }
