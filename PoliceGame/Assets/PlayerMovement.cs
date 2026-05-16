@@ -1,9 +1,10 @@
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
-    public float speed = 20f;
+    public float speed = 15f;
     public float jumpForce = 12f;
     public float rotationSpeed = 15f;
     
@@ -28,23 +29,16 @@ public class PlayerMovement : MonoBehaviour
 
         if (Camera.main != null) camTransform = Camera.main.transform;
 
-        // --- NEW FIX START ---
         SnapToSurface();
-        // --- NEW FIX END ---
     }
 
-    // This function automatically places the character on the ground at start
     void SnapToSurface()
     {
         RaycastHit hit;
-        // Shoots a ray from way above the player down to find the ground
         if (Physics.Raycast(transform.position + Vector3.up * 50f, Vector3.down, out hit, 100f))
         {
-            // Move player to the hit point + a small offset so they aren't stuck IN the floor
             transform.position = hit.point + Vector3.up * 0.1f;
         }
-        
-        // Forces the character to stand upright (no leaning)
         transform.rotation = Quaternion.Euler(0, transform.rotation.eulerAngles.y, 0);
     }
 
@@ -66,24 +60,15 @@ public class PlayerMovement : MonoBehaviour
 
         if (anim != null)
         {
+            // This matches the "iswalking" parameter in your Animator
             anim.SetBool("iswalking", moveInput.magnitude > 0.1f);
         }
     }
 
     void TryInteract()
     {
-        RaycastHit hit;
-        Vector3 rayOrigin = transform.position + Vector3.up * 1.2f;
-        
-        if (Physics.Raycast(rayOrigin, transform.forward, out hit, interactDistance))
-        {
-            // Fixed: Search the hit object or its parents for the DoorController
-            DoorController door = hit.collider.GetComponentInParent<DoorController>();
-            if (door != null)
-            {
-                door.ToggleDoor();
-            }
-        }
+        // Logic disabled to prevent compiler errors until DoorController is back
+        Debug.Log("Interaction key pressed!");
     }
 
     void FixedUpdate()
@@ -120,7 +105,7 @@ public class PlayerMovement : MonoBehaviour
 
     bool IsGrounded()
     {
-        // Using a slightly longer ray for grounded check to account for gravity
-        return Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, 0.3f);
+        // Shoots a tiny ray down to see if we are standing on a floor
+        return Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, 0.4f);
     }
 }
